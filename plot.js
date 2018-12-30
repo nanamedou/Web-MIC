@@ -100,7 +100,7 @@ export class Figure {
   }
 
 
-  clipRect(){
+  clipRect() {
     let ctx = this.ctx
     let rect = this.rect
     ctx.beginPath()
@@ -111,7 +111,7 @@ export class Figure {
 
 
   /**
-   * canvasに線グラフを書く
+   * canvasに折れ線グラフを書く
    * @param {number[]} x - グラフのx値配列
    * @param {number[]} y - グラフのy値配列
    * @public
@@ -130,7 +130,7 @@ export class Figure {
     this.clipRect()
 
     ctx.strokeStyle = this.style
-    if(!ctx.strokeStyle){
+    if (!ctx.strokeStyle) {
       ctx.strokeStyle = 'blue'
     }
 
@@ -163,7 +163,7 @@ export class Figure {
 
     /* 描画される値の範囲を求める */
     const rectFrom = this.calcRectFrom([x], [y0, y1])
-    
+
     /* x-yの値を線でつないで描画 */
     ctx.save()
 
@@ -171,7 +171,7 @@ export class Figure {
     this.clipRect()
 
     ctx.fillStyle = this.style
-    if(!ctx.fillStyle){
+    if (!ctx.fillStyle) {
       ctx.fillStyle = 'blue'
     }
 
@@ -193,7 +193,7 @@ export class Figure {
     }
     ctx.closePath()
     ctx.fill()
-    
+
     ctx.restore()
   }
 }

@@ -4,33 +4,58 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <style>
+    .input{
+      display:flex
+    }
+    .input_tag{
+      width: 20ex;
+    }
+    .input_object{
+      width: 80ex;
+    }
+    .input_value{
+      width: 20ex;
+    }
+  </style>
 </head>
 
 <body>
+
   <audio>
-    audio is not supported
   </audio>
 
   <canvas id='canvas' width='900' height='400'></canvas>
-  <div>
+  <div class='input'>
     <button id='startBtn'>start</button>
+
+    <input id='fileInput' type='file' accept='audio/*'>
   </div>
-  <div>
-    <p>volume</p>
-    <input id='volRng' type='range' value='1' min='0' max='10' step='0.1'>
+
+  <div class='input'>
+    <div class='input_tag'>volume</div>
+    <input class='input_object' id='volRng' type='range'>
+    <div class='input_value' id='volVal'>NaN</div>
   </div>
-  <div>
-    <p>delay</p>
-    <input id='dlyRng' type='range' value='0' min='0' max='3' step='0.1'>
+
+  <div class='input'>
+    <div class='input_tag'>delay</div>
+    <input class='input_object' id='dlyRng' type='range'>
+    <div class='input_value' id='dlyVal'>NaN</div>
   </div>
-  <div>
-    <p>visualizer volume min</p>
-    <input id='vvminRng' type='range' value='-150' min='-150' max='-30' step='0.1'>
+
+  <div class='input'>
+    <div class='input_tag'>visualizer volume min</div>
+    <input class='input_object' id='vvminRng' type='range'>
+    <div class='input_value' id='vvminVal''>NaN</div>
   </div>
-  <div>
-    <p>visualizer volume max</p>
-    <input id='vvmaxRng' type='range' value='-30' min='-150' max='-30' step='0.1'>
+
+  <div class='input'>
+    <div class='input_tag'>visualizer volume max</div>
+    <input class='input_object' id='vvmaxRng' type='range'>
+    <div class='input_value' id='vvmaxVal'>NaN</div>
   </div>
+  
 
 </body>
 
