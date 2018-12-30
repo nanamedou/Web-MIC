@@ -9,15 +9,22 @@ let volume = 1
 let delay = 0
 let DB_LIM = [-150, -30]
 
-let recordingInitialized
-/*
- * beginRecord呼び出し時に初期化される変数
- */
+let playbackNow
+
 let audioCtx
 let sourceNode
-let gainNode
+
 let delayNode
+let gainNode
+let dynamicCompressorNode
 let analyserNode
+
+let whiteNoiseVolume
+
+let whiteNoiseBuffer
+let whiteNoiseNode
+let whiteNoiseVolumeNode
+
 let freqDatas
 let freqMinDatas
 let hzDatas
@@ -25,12 +32,50 @@ let hzDatas
 let audioFileBlob
 let fileTypeAudio
 
+
 /**
  * オーディオインターフェースを準備する。
  */
-const audioSetUp = () => {
+function audioSetUp () {
   if (audioCtx == null) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = new window.AudioContext();
+
+    /* エフェクト設定 */
+    delayNode = audioCtx.createDelay(3)
+    delayNode.delayTime.value = delay
+
+    gainNode = audioCtx.createGain()
+    gainNode.gain.value = volume
+
+    dynamicCompressorNode = audioCtx.createDynamicsCompressor()
+
+    analyserNode = audioCtx.createAnalyser()
+    analyserNode.fftSize = FFT_SIZE
+    freqDatas = new Float32Array(analyserNode.frequencyBinCount)
+    freqMinDatas = new Array(analyserNode.frequencyBinCount)
+    hzDatas = new Float32Array(analyserNode.frequencyBinCount)
+    for (let i = 0; i < analyserNode.frequencyBinCount; i++) {
+      hzDatas[i] = i * audioCtx.sampleRate / analyserNode.fftSize
+    }
+
+    delayNode.connect(gainNode)
+    gainNode.connect(dynamicCompressorNode)
+    dynamicCompressorNode.connect(analyserNode)
+    analyserNode.connect(audioCtx.destination)
+
+    whiteNoiseBuffer = audioCtx.createBuffer(1, 8000, 8000)
+    let nowBuf = whiteNoiseBuffer.getChannelData(0)
+    for (let i = 0; i < nowBuf.length; ++i) {
+      nowBuf[i] = (Math.random() * 2 - 1)
+    }
+    whiteNoiseNode = audioCtx.createBufferSource()
+    whiteNoiseNode.buffer = whiteNoiseBuffer
+    whiteNoiseNode.loop = true
+    whiteNoiseNode.start()
+    whiteNoiseVolumeNode = audioCtx.createGain()
+    whiteNoiseVolumeNode.gain.value = whiteNoiseVolume
+
+    whiteNoiseNode.connect(whiteNoiseVolumeNode)
   }
   if (sourceNode) {
     sourceNode.disconnect()
@@ -46,35 +91,17 @@ const audioSetUp = () => {
   }
 }
 
+
 /**
- * sourceNodeが出力されるまでの流れを設定する
+ * ホワイトノイズの再生・停止を行う。
  */
-const setPipelines = (sourceNode) => {
-
-  analyserNode = audioCtx.createAnalyser()
-  analyserNode.fftSize = FFT_SIZE
-  freqDatas = new Float32Array(analyserNode.frequencyBinCount)
-  freqMinDatas = new Array(analyserNode.frequencyBinCount)
-  hzDatas = new Float32Array(analyserNode.frequencyBinCount)
-  for (let i = 0; i < analyserNode.frequencyBinCount; i++) {
-    hzDatas[i] = i * audioCtx.sampleRate / analyserNode.fftSize
+function setWhiteNoise (isActive) {
+  if (playbackNow) {
+    whiteNoiseVolumeNode.disconnect()
+    if (isActive) {
+      whiteNoiseVolumeNode.connect(delayNode)
+    }
   }
-
-  gainNode = audioCtx.createGain()
-  gainNode.gain.value = volume
-
-  let dynamicCompressorNode = audioCtx.createDynamicsCompressor()
-
-  delayNode = audioCtx.createDelay(3)
-  delayNode.delayTime.value = delay
-
-
-  /* ノードを接続する */
-  sourceNode.connect(analyserNode)
-  analyserNode.connect(gainNode)
-  gainNode.connect(dynamicCompressorNode)
-  dynamicCompressorNode.connect(delayNode)
-  delayNode.connect(audioCtx.destination)
 }
 
 
@@ -82,12 +109,12 @@ const setPipelines = (sourceNode) => {
  * 録音を開始する関数。
  * この関数は常にユーザー操作イベント中に呼び出されなければならない。
  */
-const beginRecord = () => {
-  /**
+function beginMICMode () {
+  /*
    * オーディオのあれこれを作成する。
    * ユーザー操作イベント中でないと失敗することがある。 
    */
-  recordingInitialized = false
+  playbackNow = false
 
   audioSetUp()
 
@@ -102,9 +129,9 @@ const beginRecord = () => {
         /* ノードを作成する */
         sourceNode = audioCtx.createMediaStreamSource(stream)
 
-        setPipelines(sourceNode)
+        sourceNode.connect(delayNode)
 
-        recordingInitialized = true
+        playbackNow = true
       }).catch((err) => {
         console.log('メディア初期化に失敗しました。: ' + err)
       })
@@ -113,17 +140,18 @@ const beginRecord = () => {
   }
 }
 
+
 /**
  * ローカルにある音楽を再生する。
  * 
  * @argument {File} file 再生する対象
  */
-const beginFile = (file) => {
+function beginSoundFileMode (file) {
   /**
    * オーディオのあれこれを作成する。
    * ユーザー操作イベント中でないと失敗することがある。 
    */
-  recordingInitialized = false
+  playbackNow = false
 
   audioSetUp()
 
@@ -131,14 +159,22 @@ const beginFile = (file) => {
   fileTypeAudio = new Audio(audioFileBlob)
   sourceNode = audioCtx.createMediaElementSource(fileTypeAudio)
 
-  setPipelines(sourceNode)
+  sourceNode.connect(delayNode)
 
   fileTypeAudio.play()
-  recordingInitialized = true
-
+  playbackNow = true
 }
 
-const main = () => {
+
+function setRangeAttribute(rangeElement, min, max, step, value){
+  rangeElement.min = min
+  rangeElement.max = max
+  rangeElement.value = value
+  rangeElement.step = step
+}
+
+
+function main () {
   /* 
    * 描画関連設定
    */
@@ -164,7 +200,7 @@ const main = () => {
 
   /* 描画関数 */
   let render = () => {
-    if (recordingInitialized) {
+    if (playbackNow) {
       analyserNode.getFloatFrequencyData(freqDatas)
       fig.limY = DB_LIM
       for (let i = 0; i < analyserNode.frequencyBinCount; i++) {
@@ -173,7 +209,7 @@ const main = () => {
     }
     ctx.fillStyle = 'black'
     ctx.fillRect(rect[0], rect[1], rect[2], rect[3])
-    if (recordingInitialized) {
+    if (playbackNow) {
       fig.fill_between(hzDatas, freqDatas, freqMinDatas)
     }
 
@@ -190,76 +226,83 @@ const main = () => {
   beginBtn.onclick = () => {
 
     beginBtn.setAttribute('disabled', 'disabled')
-    beginRecord()
+    beginMICMode()
   }
   let fileInput = document.getElementById('fileInput')
   fileInput.onchange = () => {
     // ボタンが押されたとき再生を開始する。
     beginBtn.removeAttribute('disabled')
-    beginFile(fileInput.files[0])
+    beginSoundFileMode(fileInput.files[0])
   }
 
   /* ボリューム設定 */
   let volumeRng = document.getElementById('volRng')
   let volumeVal = document.getElementById('volVal')
-  volumeRng.min = 0
-  volumeRng.max = 10
-  volumeRng.value = 1
-  volumeRng.step = 0.1
+  setRangeAttribute(volumeRng, 0, 100, 1, 100)
   volumeRng.oninput = () => {
-    if (recordingInitialized) {
-      gainNode.gain.value = volumeRng.value
+    volumeVal.innerHTML = volumeRng.value
+    volume = volumeRng.value / 100
+    if (playbackNow) {
+      gainNode.gain.value = volume
     }
-    volumeVal.innerHTML
-      = volume
-      = volumeRng.value
   }
   volumeRng.oninput()
 
   /* 遅延設定 */
   let delayRng = document.getElementById('dlyRng')
   let delayVal = document.getElementById('dlyVal')
-  delayRng.min = 0
-  delayRng.max = 3
-  delayRng.value = 0
-  delayRng.step = 0.1
+  setRangeAttribute(delayRng, 0, 3, 0.1, 0)
   delayRng.oninput = () => {
-    if (recordingInitialized) {
-      delayNode.delayTime.value = delayRng.value
+    delayVal.innerHTML = delayRng.value
+    delay = delayRng.value
+    if (playbackNow) {
+      delayNode.delayTime.value = delay
     }
-    delayVal.innerHTML
-      = delay
-      = delayRng.value
   }
   delayRng.oninput()
 
   /* スペクトル表示範囲設定 */
   let vvMinRng = document.getElementById('vvminRng')
   let vvMinVal = document.getElementById('vvminVal')
-  vvMinRng.min = -150
-  vvMinRng.max = -30
-  vvMinRng.value = -150
-  vvMinRng.step = 0.1
-  vvMinRng.oninput = () => {
+  setRangeAttribute(vvMinRng, -150, -30, 0.1, -150)
+  const vvMinOnIn = () => {
     vvMinVal.innerHTML
       = DB_LIM[0]
       = vvMinRng.value
       = Math.min(vvMinRng.value, DB_LIM[1])
   }
-  vvMinRng.oninput()
+  vvMinRng.oninput = vvMinOnIn
+  vvMinOnIn()
   let vvMaxRng = document.getElementById('vvmaxRng')
   let vvMaxVal = document.getElementById('vvmaxVal')
-  vvMaxRng.min = -150
-  vvMaxRng.max = -30
-  vvMaxRng.value = -30
-  vvMaxRng.step = 0.1
-  vvMaxRng.oninput = () => {
+  setRangeAttribute(vvMaxRng, -150, -30, 0.1, -30)
+  const vvMaxOnIn = () => {
     vvMaxVal.innerHTML
       = DB_LIM[1]
       = vvMaxRng.value
       = Math.max(vvMaxRng.value, DB_LIM[0])
   }
-  vvMaxRng.oninput()
+  vvMaxRng.oninput = vvMaxOnIn
+  vvMaxOnIn()
+
+  /* ホワイトノイズのオンオフ */
+  let whiteNoiseCbox = document.getElementById('whiteNoiseCbox')
+  whiteNoiseCbox.onchange = () => {
+    setWhiteNoise(whiteNoiseCbox.checked)
+  }
+
+  let whiteNoiseVolumeRng = document.getElementById('whiteNoiseVolumeRng')
+  let whiteNoiseVolumeVal = document.getElementById('whiteNoiseVolumeVal')
+  setRangeAttribute(vvMaxRng, 0, 100, 1, 100)
+  whiteNoiseVolumeRng.oninput = () => {
+    whiteNoiseVolumeVal.innerHTML = whiteNoiseVolumeRng.value
+    whiteNoiseVolume = whiteNoiseVolumeRng.value / 100
+    if (playbackNow) {
+      whiteNoiseVolumeNode.gain.value = whiteNoiseVolume
+    }
+  }
+  whiteNoiseVolumeRng.oninput()
 }
+
 
 main()

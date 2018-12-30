@@ -9,7 +9,7 @@
       display:flex
     }
     .input_tag{
-      width: 20ex;
+      width: 30ex;
     }
     .input_object{
       width: 80ex;
@@ -47,19 +47,24 @@
   <div class='input'>
     <div class='input_tag'>visualizer volume min</div>
     <input class='input_object' id='vvminRng' type='range'>
-    <div class='input_value' id='vvminVal''>NaN</div>
+    <div class='input_value' id='vvminVal'>NaN</div>
   </div>
 
-  <div class='input'>
+  <div class=' input'>
     <div class='input_tag'>visualizer volume max</div>
     <input class='input_object' id='vvmaxRng' type='range'>
     <div class='input_value' id='vvmaxVal'>NaN</div>
   </div>
-  
 
+  <div class='input'>
+    <div class='input_tag'>
+      <input id='whiteNoiseCbox' type='checkbox'>
+      <label for="whiteNoiseCbox">white noise</label>
+    </div>
+    <input class='input_object' id='whiteNoiseVolumeRng' type='range'>
+    <div class='input_value' id='whiteNoiseVolumeVal'>NaN</div>
+  </div>
 </body>
-
-
 
 </html>
 
