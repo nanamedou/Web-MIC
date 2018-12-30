@@ -9,26 +9,41 @@ let volume = 1
 let delay = 0
 let DB_LIM = [-150, -30]
 
+/* 再生状態フラグ類 */
 let playbackNow
 
+/* 音声インターフェース類 */
 let audioCtx
 let sourceNode
+
+/* 基本エフェクト用変数 */
+let sourceToEffectNode
 
 let delayNode
 let gainNode
 let dynamicCompressorNode
 let analyserNode
 
-let whiteNoiseVolume
+/* ホワイトノイズ用変数 */
+let whiteNoiseGain = 1
 
 let whiteNoiseBuffer
 let whiteNoiseNode
-let whiteNoiseVolumeNode
+let whiteNoiseGainNode
 
+/* エコー用変数 */
+let echoGain = 0.1
+let echoDelay = 0.2
+let echoGainNode
+let echoDelayNode
+
+
+/* fftデータ */
 let freqDatas
 let freqMinDatas
 let hzDatas
 
+/* 音声ファイルデータ */
 let audioFileBlob
 let fileTypeAudio
 
@@ -36,11 +51,13 @@ let fileTypeAudio
 /**
  * オーディオインターフェースを準備する。
  */
-function audioSetUp () {
+function audioSetUp() {
   if (audioCtx == null) {
     audioCtx = new window.AudioContext();
 
     /* エフェクト設定 */
+    sourceToEffectNode = audioCtx.createDelay()
+
     delayNode = audioCtx.createDelay(3)
     delayNode.delayTime.value = delay
 
@@ -58,11 +75,13 @@ function audioSetUp () {
       hzDatas[i] = i * audioCtx.sampleRate / analyserNode.fftSize
     }
 
+    sourceToEffectNode.connect(delayNode)
     delayNode.connect(gainNode)
     gainNode.connect(dynamicCompressorNode)
     dynamicCompressorNode.connect(analyserNode)
     analyserNode.connect(audioCtx.destination)
 
+    /* ホワイトノイズエフェクト生成部 */
     whiteNoiseBuffer = audioCtx.createBuffer(1, 8000, 8000)
     let nowBuf = whiteNoiseBuffer.getChannelData(0)
     for (let i = 0; i < nowBuf.length; ++i) {
@@ -72,10 +91,19 @@ function audioSetUp () {
     whiteNoiseNode.buffer = whiteNoiseBuffer
     whiteNoiseNode.loop = true
     whiteNoiseNode.start()
-    whiteNoiseVolumeNode = audioCtx.createGain()
-    whiteNoiseVolumeNode.gain.value = whiteNoiseVolume
+    whiteNoiseGainNode = audioCtx.createGain()
+    whiteNoiseGainNode.gain.value = whiteNoiseGain
 
-    whiteNoiseNode.connect(whiteNoiseVolumeNode)
+    whiteNoiseNode.connect(whiteNoiseGainNode)
+
+    /* エコー生成部 */
+    echoDelayNode = audioCtx.createDelay(3)
+    echoDelayNode.delayTime.value = echoDelay
+    echoGainNode = audioCtx.createGain()
+    echoGainNode.gain.value = echoGain
+
+    sourceToEffectNode.connect(echoDelayNode)
+    echoDelayNode.connect(echoGainNode)
   }
   if (sourceNode) {
     sourceNode.disconnect()
@@ -93,13 +121,28 @@ function audioSetUp () {
 
 
 /**
- * ホワイトノイズの再生・停止を行う。
+ * ホワイトノイズの開始・停止を行う。
  */
-function setWhiteNoise (isActive) {
+function setWhiteNoise(isActive) {
   if (playbackNow) {
-    whiteNoiseVolumeNode.disconnect()
+    whiteNoiseGainNode.disconnect()
     if (isActive) {
-      whiteNoiseVolumeNode.connect(delayNode)
+      whiteNoiseGainNode.connect(delayNode)
+    }
+  }
+}
+
+
+/**
+ * エコーの開始・停止を行う。
+ */
+function setEcho(isActive) {
+  if (playbackNow) {
+    //sourceToEffectNode.disconnect(echoDelayNode)
+    echoGainNode.disconnect()
+    if (isActive) {
+      //
+      echoGainNode.connect(sourceToEffectNode)
     }
   }
 }
@@ -109,7 +152,7 @@ function setWhiteNoise (isActive) {
  * 録音を開始する関数。
  * この関数は常にユーザー操作イベント中に呼び出されなければならない。
  */
-function beginMICMode () {
+function beginMICMode() {
   /*
    * オーディオのあれこれを作成する。
    * ユーザー操作イベント中でないと失敗することがある。 
@@ -129,7 +172,7 @@ function beginMICMode () {
         /* ノードを作成する */
         sourceNode = audioCtx.createMediaStreamSource(stream)
 
-        sourceNode.connect(delayNode)
+        sourceNode.connect(sourceToEffectNode)
 
         playbackNow = true
       }).catch((err) => {
@@ -146,7 +189,7 @@ function beginMICMode () {
  * 
  * @argument {File} file 再生する対象
  */
-function beginSoundFileMode (file) {
+function beginSoundFileMode(file) {
   /**
    * オーディオのあれこれを作成する。
    * ユーザー操作イベント中でないと失敗することがある。 
@@ -159,22 +202,16 @@ function beginSoundFileMode (file) {
   fileTypeAudio = new Audio(audioFileBlob)
   sourceNode = audioCtx.createMediaElementSource(fileTypeAudio)
 
-  sourceNode.connect(delayNode)
+  sourceNode.connect(sourceToEffectNode)
 
   fileTypeAudio.play()
   playbackNow = true
 }
 
 
-function setRangeAttribute(rangeElement, min, max, step, value){
-  rangeElement.min = min
-  rangeElement.max = max
-  rangeElement.value = value
-  rangeElement.step = step
-}
 
 
-function main () {
+function main() {
   /* 
    * 描画関連設定
    */
@@ -222,17 +259,31 @@ function main () {
    * 音声関連設定
    */
 
+  function setRangeAttribute(rangeElement, min, max, step, value) {
+    rangeElement.min = min
+    rangeElement.max = max
+    rangeElement.value = value
+    rangeElement.step = step
+  }
+
   let beginBtn = document.getElementById('startBtn')
   beginBtn.onclick = () => {
-
     beginBtn.setAttribute('disabled', 'disabled')
     beginMICMode()
   }
   let fileInput = document.getElementById('fileInput')
+  fileInput.value = null
   fileInput.onchange = () => {
     // ボタンが押されたとき再生を開始する。
     beginBtn.removeAttribute('disabled')
     beginSoundFileMode(fileInput.files[0])
+  }
+  let fileLoop = document.getElementById('fileLoop')
+  fileLoop.checked = false
+  fileLoop.onchange = () => {
+    if (fileTypeAudio) {
+      fileTypeAudio.loop = fileLoop.checked
+    }
   }
 
   /* ボリューム設定 */
@@ -285,23 +336,52 @@ function main () {
   vvMaxRng.oninput = vvMaxOnIn
   vvMaxOnIn()
 
-  /* ホワイトノイズのオンオフ */
+  /* ホワイトノイズの設定 */
   let whiteNoiseCbox = document.getElementById('whiteNoiseCbox')
   whiteNoiseCbox.onchange = () => {
     setWhiteNoise(whiteNoiseCbox.checked)
   }
 
-  let whiteNoiseVolumeRng = document.getElementById('whiteNoiseVolumeRng')
-  let whiteNoiseVolumeVal = document.getElementById('whiteNoiseVolumeVal')
-  setRangeAttribute(vvMaxRng, 0, 100, 1, 100)
-  whiteNoiseVolumeRng.oninput = () => {
-    whiteNoiseVolumeVal.innerHTML = whiteNoiseVolumeRng.value
-    whiteNoiseVolume = whiteNoiseVolumeRng.value / 100
+  let whiteNoiseGainRng = document.getElementById('whiteNoiseGainRng')
+  let whiteNoiseGainVal = document.getElementById('whiteNoiseGainVal')
+  setRangeAttribute(whiteNoiseGainRng, 0, 100, 1, 100)
+  whiteNoiseGainRng.oninput = () => {
+    whiteNoiseGainVal.innerHTML = whiteNoiseGainRng.value
+    whiteNoiseGain = whiteNoiseGainRng.value / 100
     if (playbackNow) {
-      whiteNoiseVolumeNode.gain.value = whiteNoiseVolume
+      whiteNoiseGainNode.gain.value = whiteNoiseGain
     }
   }
-  whiteNoiseVolumeRng.oninput()
+  whiteNoiseGainRng.oninput()
+
+  /* エコーの設定 */
+  let echoCbox = document.getElementById('echoCbox')
+  echoCbox.onchange = () => {
+    setEcho(echoCbox.checked)
+  }
+
+  let echoGainRng = document.getElementById('echoGainRng')
+  let echoGainVal = document.getElementById('echoGainVal')
+  setRangeAttribute(echoGainRng, 0, 100, 1, 100)
+  echoGainRng.oninput = () => {
+    echoGainVal.innerHTML = echoGainRng.value
+    echoGain = echoGainRng.value / 100
+    if (playbackNow) {
+      echoGainNode.gain.value = echoGain
+    }
+  }
+  echoGainRng.oninput()
+  let echoDelayRng = document.getElementById('echoDelayRng')
+  let echoDelayVal = document.getElementById('echoDelayVal')
+  setRangeAttribute(echoDelayRng, 0, 3, 0.1, 0.5)
+  echoDelayRng.oninput = () => {
+    echoDelayVal.innerHTML = echoDelayRng.value
+    echoDelay = echoDelayRng.value
+    if (playbackNow) {
+      echoDelayNode.delayTime.value = echoDelay
+    }
+  }
+  echoDelayRng.oninput()
 }
 
 

@@ -30,6 +30,8 @@
     <button id='startBtn'>start</button>
 
     <input id='fileInput' type='file' accept='audio/*'>
+    <input id='fileLoop' type='checkbox'>
+    <label for="fileLoop">loop</label>
   </div>
 
   <div class='input'>
@@ -50,7 +52,7 @@
     <div class='input_value' id='vvminVal'>NaN</div>
   </div>
 
-  <div class=' input'>
+  <div class='input'>
     <div class='input_tag'>visualizer volume max</div>
     <input class='input_object' id='vvmaxRng' type='range'>
     <div class='input_value' id='vvmaxVal'>NaN</div>
@@ -61,8 +63,28 @@
       <input id='whiteNoiseCbox' type='checkbox'>
       <label for="whiteNoiseCbox">white noise</label>
     </div>
-    <input class='input_object' id='whiteNoiseVolumeRng' type='range'>
-    <div class='input_value' id='whiteNoiseVolumeVal'>NaN</div>
+  </div>
+  <div class='input'>
+    <div class='input_tag'>volume</div>
+    <input class='input_object' id='whiteNoiseGainRng' type='range'>
+    <div class='input_value' id='whiteNoiseGainVal'>NaN</div>
+  </div>
+
+  <div class='input'>
+    <div class='input_tag'>
+      <input id='echoCbox' type='checkbox'>
+      <label for="echoCbox">echo</label>
+    </div>
+  </div>
+  <div class='input'>
+    <div class='input_tag'>volume</div>
+    <input class='input_object' id='echoGainRng' type='range'>
+    <div class='input_value' id='echoGainVal'>NaN</div>
+  </div>
+  <div class='input'>
+    <div class='input_tag'>delay</div>
+    <input class='input_object' id='echoDelayRng' type='range'>
+    <div class='input_value' id='echoDelayVal'>NaN</div>
   </div>
 </body>
 
