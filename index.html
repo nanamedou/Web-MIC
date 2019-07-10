@@ -4,20 +4,7 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <style>
-    .input{
-      display:flex
-    }
-    .input_tag{
-      width: 30ex;
-    }
-    .input_object{
-      width: 80ex;
-    }
-    .input_value{
-      width: 20ex;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 
 <body>
@@ -25,69 +12,69 @@
   <audio>
   </audio>
 
-  <canvas id='canvas' width='900' height='400'></canvas>
-  <div class='input'>
-    <button id='startBtn'>start</button>
+  <canvas id="canvas" width="900" height="400"></canvas>
+  <div class="input">
+    <button id="startBtn">start</button>
 
-    <input id='fileInput' type='file' accept='audio/*'>
-    <input id='fileLoop' type='checkbox'>
+    <input id="fileInput" type="file" accept="audio/*">
+    <input id="fileLoop" type="checkbox">
     <label for="fileLoop">loop</label>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>volume</div>
-    <input class='input_object' id='volRng' type='range'>
-    <div class='input_value' id='volVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">volume</div>
+    <input class="input_object" id="volumeRng" type="range">
+    <div class="input_value" id="volumeVal">NaN</div>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>delay</div>
-    <input class='input_object' id='dlyRng' type='range'>
-    <div class='input_value' id='dlyVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">delay</div>
+    <input class="input_object" id="delayRng" type="range">
+    <div class="input_value" id="delayVal">NaN</div>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>visualizer volume min</div>
-    <input class='input_object' id='vvminRng' type='range'>
-    <div class='input_value' id='vvminVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">visualizer volume min</div>
+    <input class="input_object" id="vvminRng" type="range">
+    <div class="input_value" id="vvminVal">NaN</div>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>visualizer volume max</div>
-    <input class='input_object' id='vvmaxRng' type='range'>
-    <div class='input_value' id='vvmaxVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">visualizer volume max</div>
+    <input class="input_object" id="vvmaxRng" type="range">
+    <div class="input_value" id="vvmaxVal">NaN</div>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>
-      <input id='whiteNoiseCbox' type='checkbox'>
+  <div class="input">
+    <div class="input_tag">
+      <input id="whiteNoiseCbox" type="checkbox">
       <label for="whiteNoiseCbox">white noise</label>
     </div>
   </div>
-  <div class='input'>
-    <div class='input_tag'>volume</div>
-    <input class='input_object' id='whiteNoiseGainRng' type='range'>
-    <div class='input_value' id='whiteNoiseGainVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">volume</div>
+    <input class="input_object" id="whiteNoiseGainRng" type="range">
+    <div class="input_value" id="whiteNoiseGainVal">NaN</div>
   </div>
 
-  <div class='input'>
-    <div class='input_tag'>
-      <input id='echoCbox' type='checkbox'>
+  <div class="input">
+    <div class="input_tag">
+      <input id="echoCbox" type="checkbox">
       <label for="echoCbox">echo</label>
     </div>
   </div>
-  <div class='input'>
-    <div class='input_tag'>volume</div>
-    <input class='input_object' id='echoGainRng' type='range'>
-    <div class='input_value' id='echoGainVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">volume</div>
+    <input class="input_object" id="echoGainRng" type="range">
+    <div class="input_value" id="echoGainVal">NaN</div>
   </div>
-  <div class='input'>
-    <div class='input_tag'>delay</div>
-    <input class='input_object' id='echoDelayRng' type='range'>
-    <div class='input_value' id='echoDelayVal'>NaN</div>
+  <div class="input">
+    <div class="input_tag">delay</div>
+    <input class="input_object" id="echoDelayRng" type="range">
+    <div class="input_value" id="echoDelayVal">NaN</div>
   </div>
 </body>
 
 </html>
 
-<script src='./script.js' type="module"></script>
+<script src="./script.js" type="module"></script>
